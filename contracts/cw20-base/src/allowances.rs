@@ -138,6 +138,7 @@ pub fn execute_transfer_from(
     BALANCES.update(
         deps.storage,
         &owner_addr,
+        env.block.height,
         |balance: Option<Uint128>| -> StdResult<_> {
             Ok(balance.unwrap_or_default().checked_sub(amount)?)
         },
@@ -145,6 +146,7 @@ pub fn execute_transfer_from(
     BALANCES.update(
         deps.storage,
         &rcpt_addr,
+        env.block.height,
         |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
 
@@ -175,6 +177,7 @@ pub fn execute_burn_from(
     BALANCES.update(
         deps.storage,
         &owner_addr,
+        env.block.height,
         |balance: Option<Uint128>| -> StdResult<_> {
             Ok(balance.unwrap_or_default().checked_sub(amount)?)
         },
@@ -213,6 +216,7 @@ pub fn execute_send_from(
     BALANCES.update(
         deps.storage,
         &owner_addr,
+        env.block.height,
         |balance: Option<Uint128>| -> StdResult<_> {
             Ok(balance.unwrap_or_default().checked_sub(amount)?)
         },
@@ -220,6 +224,7 @@ pub fn execute_send_from(
     BALANCES.update(
         deps.storage,
         &rcpt_addr,
+        env.block.height,
         |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
 
