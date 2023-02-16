@@ -89,7 +89,7 @@ fn verify_logo(logo: &Logo) -> Result<(), ContractError> {
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     mut deps: DepsMut,
-    _env: Env,
+    env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
@@ -97,7 +97,7 @@ pub fn instantiate(
     // check valid token info
     msg.validate()?;
     // create initial accounts
-    let total_supply = create_accounts(&mut deps, &msg.initial_balances)?;
+    let total_supply = create_accounts(&mut deps, env.block.height, &msg.initial_balances)?;
 
     if let Some(limit) = msg.get_cap() {
         if total_supply > limit {
@@ -153,6 +153,7 @@ pub fn instantiate(
 
 pub fn create_accounts(
     deps: &mut DepsMut,
+    block_height: u64,
     accounts: &[Cw20Coin],
 ) -> Result<Uint128, ContractError> {
     validate_accounts(accounts)?;
@@ -160,7 +161,7 @@ pub fn create_accounts(
     let mut total_supply = Uint128::zero();
     for row in accounts {
         let address = deps.api.addr_validate(&row.address)?;
-        BALANCES.save(deps.storage, &address, &row.amount)?;
+        BALANCES.save(deps.storage, &address, &row.amount, block_height)?;
         total_supply += row.amount;
     }
 
@@ -230,7 +231,7 @@ pub fn execute(
 
 pub fn execute_transfer(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     recipient: String,
     amount: Uint128,
@@ -244,6 +245,7 @@ pub fn execute_transfer(
     BALANCES.update(
         deps.storage,
         &info.sender,
+        env.block.height,
         |balance: Option<Uint128>| -> StdResult<_> {
             Ok(balance.unwrap_or_default().checked_sub(amount)?)
         },
@@ -251,6 +253,7 @@ pub fn execute_transfer(
     BALANCES.update(
         deps.storage,
         &rcpt_addr,
+        env.block.height,
         |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
 
@@ -264,7 +267,7 @@ pub fn execute_transfer(
 
 pub fn execute_burn(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
@@ -276,6 +279,7 @@ pub fn execute_burn(
     BALANCES.update(
         deps.storage,
         &info.sender,
+        env.block.height,
         |balance: Option<Uint128>| -> StdResult<_> {
             Ok(balance.unwrap_or_default().checked_sub(amount)?)
         },
@@ -295,7 +299,7 @@ pub fn execute_burn(
 
 pub fn execute_mint(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     recipient: String,
     amount: Uint128,
@@ -323,6 +327,7 @@ pub fn execute_mint(
     BALANCES.update(
         deps.storage,
         &rcpt_addr,
+        env.block.height,
         |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
 
@@ -335,7 +340,7 @@ pub fn execute_mint(
 
 pub fn execute_send(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     contract: String,
     amount: Uint128,
@@ -351,6 +356,7 @@ pub fn execute_send(
     BALANCES.update(
         deps.storage,
         &info.sender,
+        env.block.height,
         |balance: Option<Uint128>| -> StdResult<_> {
             Ok(balance.unwrap_or_default().checked_sub(amount)?)
         },
@@ -358,6 +364,7 @@ pub fn execute_send(
     BALANCES.update(
         deps.storage,
         &rcpt_addr,
+        env.block.height,
         |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
 
