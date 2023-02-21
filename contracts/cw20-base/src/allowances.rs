@@ -170,10 +170,19 @@ pub fn execute_burn_from(
         },
     )?;
     // reduce total_supply
-    TOKEN_INFO.update(deps.storage, |mut meta| -> StdResult<_> {
-        meta.total_supply = meta.total_supply.checked_sub(amount)?;
-        Ok(meta)
-    })?;
+    TOKEN_INFO.update(
+        deps.storage,
+        env.block.height,
+        |maybe_meta| -> StdResult<_> {
+            match maybe_meta {
+                Some(mut meta) => {
+                    meta.total_supply = meta.total_supply.checked_sub(amount)?;
+                    Ok(meta)
+                }
+                None => Err(StdError::generic_err("token info must be initialized")),
+            }
+        },
+    )?;
 
     let res = Response::new().add_attributes(vec![
         attr("action", "burn_from"),

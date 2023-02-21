@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{Addr, Uint128};
-use cw_storage_plus::{Item, Map, SnapshotMap, Strategy};
+use cw_storage_plus::{Item, Map, SnapshotItem, SnapshotMap, Strategy};
 
 use cw20::{AllowanceResponse, Logo, MarketingInfoResponse};
 
@@ -29,7 +29,12 @@ impl TokenInfo {
     }
 }
 
-pub const TOKEN_INFO: Item<TokenInfo> = Item::new("token_info");
+pub const TOKEN_INFO: SnapshotItem<TokenInfo> = SnapshotItem::new(
+    "token_info",
+    "token_info__checkpoints",
+    "token_info__changelog",
+    Strategy::EveryBlock,
+);
 pub const MARKETING_INFO: Item<MarketingInfoResponse> = Item::new("marketing_info");
 pub const LOGO: Item<Logo> = Item::new("logo");
 pub const BALANCES: SnapshotMap<&Addr, Uint128> = SnapshotMap::new(
