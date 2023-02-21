@@ -126,7 +126,7 @@ pub fn instantiate(
         total_supply,
         mint,
     };
-    TOKEN_INFO.save(deps.storage, &data)?;
+    TOKEN_INFO.save(deps.storage, &data, env.block.height)?;
 
     if let Some(marketing) = msg.marketing {
         let logo = if let Some(logo) = marketing.logo {
@@ -293,10 +293,19 @@ pub fn execute_burn(
         },
     )?;
     // reduce total_supply
-    TOKEN_INFO.update(deps.storage, |mut info| -> StdResult<_> {
-        info.total_supply = info.total_supply.checked_sub(amount)?;
-        Ok(info)
-    })?;
+    TOKEN_INFO.update(
+        deps.storage,
+        env.block.height,
+        |maybe_info| -> StdResult<_> {
+            match maybe_info {
+                Some(mut info) => {
+                    info.total_supply = info.total_supply.checked_sub(amount)?;
+                    Ok(info)
+                }
+                None => Err(StdError::generic_err("token info must be initialized")),
+            }
+        },
+    )?;
 
     let res = Response::new()
         .add_attribute("action", "burn")
@@ -337,7 +346,7 @@ pub fn execute_mint(
             return Err(ContractError::CannotExceedCap {});
         }
     }
-    TOKEN_INFO.save(deps.storage, &config)?;
+    TOKEN_INFO.save(deps.storage, &config, env.block.height)?;
 
     // add amount to recipient balance
     let rcpt_addr = deps.api.addr_validate(&recipient)?;
@@ -403,7 +412,7 @@ pub fn execute_send(
 
 pub fn execute_update_minter(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     new_minter: Option<String>,
 ) -> Result<Response, ContractError> {
@@ -426,7 +435,7 @@ pub fn execute_update_minter(
 
     config.mint = minter_data;
 
-    TOKEN_INFO.save(deps.storage, &config)?;
+    TOKEN_INFO.save(deps.storage, &config, env.block.height)?;
 
     Ok(Response::default()
         .add_attribute("action", "update_minter")
